@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mon Bureau</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a desk. Left rail = drawers (views), centre = the work surface, right = Claude sitting across the table. */
+:root {
+  --bg: #ECF0ED; --surface: #FAFCFA; --sunk: #E2E8E4;
+  --ink: #16211C; --muted: #5A6A62; --line: #D2DBD5;
+  --accent: #0E6B56; --accent-ink: #FFFFFF; --accent-soft: #D6EAE3;
+  --warn: #9A6410; --crit: #B03A2A; --crit-soft: #F6E1DC;
+  --display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #101513; --surface: #181F1C; --sunk: #0C100E;
+  --ink: #E4EBE7; --muted: #92A29A; --line: #2A3531;
+  --accent: #52C4A2; --accent-ink: #06231B; --accent-soft: #1C3A31;
+  --warn: #E0AD55; --crit: #F08A78; --crit-soft: #3A1F1A;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #101513; --surface: #181F1C; --sunk: #0C100E;
+  --ink: #E4EBE7; --muted: #92A29A; --line: #2A3531;
+  --accent: #52C4A2; --accent-ink: #06231B; --accent-soft: #1C3A31;
+  --warn: #E0AD55; --crit: #F08A78; --crit-soft: #3A1F1A;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+html, body { margin: 0 }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+button, input, select, textarea { font: inherit; color: inherit }
+button { cursor: pointer }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15 }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em }
+h2 { font-size: 1.05rem; font-weight: 700 }
+h3 { font-size: 1rem; font-weight: 700 }
+.mono { font-family: var(--mono); font-size: .8rem; font-variant-numeric: tabular-nums }
+.muted { color: var(--muted) }
+.eyebrow { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); font-weight: 600 }
+
+.app { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 100dvh; }
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  padding: 22px 12px 16px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 22px; border-right: 1px solid var(--line); }
+.brand { font-family: var(--display); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; padding-left: 10px }
+.brand span { color: var(--accent) }
+.nav { display: flex; flex-direction: column; gap: 2px }
+.nav a { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-weight: 500 }
+.nav a:hover { background: var(--sunk) }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600 }
+:root[data-theme="dark"] .nav a[aria-current="page"] { color: var(--ink) }
+.nav .count { font-family: var(--mono); font-size: .72rem; color: var(--muted) }
+.nav a.nav-claude { display: none }
+.rail-foot { margin-top: auto; font-size: .78rem; color: var(--muted); padding-left: 10px }
+
+.main { min-width: 0; padding-block: 28px 60px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.main > section { max-width: 900px; margin-inline: auto; display: flex; flex-direction: column; gap: 22px; padding-inline: 12px }
+.head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px }
+.head p { margin: 4px 0 0 }
+.banner { max-width: 900px; margin: 0 auto 16px; padding: 10px 14px; border-radius: var(--r); background: var(--crit-soft); color: var(--crit); font-weight: 500 }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px }
+.block { display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.block + .block { margin-top: 26px }
+.block > header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line) }
+
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 8px; font-weight: 500; white-space: nowrap }
+.btn:hover { border-color: var(--muted) }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600 }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 4px 8px }
+.btn.ghost:hover { color: var(--ink); background: var(--sunk) }
+.btn.danger { color: var(--crit) }
+.btn:disabled { opacity: .5; cursor: default }
+input[type=text], input[type=date], input[type=time], input[type=number], select, textarea {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; min-width: 0; width: 100% }
+textarea { resize: vertical; line-height: 1.5 }
+.quick { display: flex; flex-wrap: wrap; gap: 8px }
+.quick > input[type=text] { flex: 1 1 180px }
+.quick > input[type=date], .quick > select { flex: 0 1 140px; width: auto }
+.quick > input[type=time] { flex: 0 0 104px; width: auto }
+#f-jevent > input[type=text] { flex-basis: 110px }
+[hidden] { display: none !important }
+
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
+.row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line) }
+.row:last-child { border-bottom: 0 }
+.row input[type=checkbox] { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--accent); flex: none }
+.row .body { flex: 1; min-width: 0 }
+.row .title { background: none; border: 0; padding: 0; text-align: left; font-weight: 500; overflow-wrap: anywhere }
+.row .title:hover { color: var(--accent) }
+.row.done .title { text-decoration: line-through; color: var(--muted); font-weight: 400 }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: .8rem; color: var(--muted); margin-top: 1px }
+.pill { display: inline-block; font-size: .72rem; font-weight: 600; padding: 1px 8px; border-radius: 99px; background: var(--sunk); color: var(--muted) }
+.pill.late { background: var(--crit-soft); color: var(--crit) }
+.pill.today, .pill.on { background: var(--accent-soft); color: var(--accent) }
+.pill.high { background: transparent; color: var(--warn); border: 1px solid currentColor }
+.empty { color: var(--muted); padding: 10px 2px; font-size: .9rem }
+.time { font-family: var(--mono); font-size: .8rem; color: var(--accent); min-width: 88px; padding-top: 2px; font-variant-numeric: tabular-nums }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 4px 12px; font-size: .85rem; font-weight: 500; color: var(--muted) }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+
+.dots { display: flex; gap: 3px; align-items: center; padding-top: 6px }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line) }
+.dots i.on { background: var(--accent) }
+
+.bar { height: 6px; border-radius: 99px; background: var(--sunk); overflow: hidden }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px }
+.goal { display: grid; grid-template-columns: minmax(0, 1fr) 46px; gap: 4px 12px; align-items: center; padding: 10px 2px; border-bottom: 1px solid var(--line) }
+.goal:last-child { border-bottom: 0 }
+.goal .pct { font-family: var(--mono); font-size: .85rem; text-align: right; font-variant-numeric: tabular-nums }
+.goal input[type=range] { width: 100%; accent-color: var(--accent); padding: 0; border: 0; background: none }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.card header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px }
+.card h3 { overflow-wrap: anywhere }
+.card .next { list-style: none; margin: 0; padding: 0; font-size: .88rem; display: flex; flex-direction: column; gap: 3px }
+.card .next li::before { content: "– "; color: var(--muted) }
+.card footer { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 4px }
+.card .links { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line) }
+.mhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px }
+.mhead strong { overflow-wrap: anywhere; font-weight: 600 }
+.mtext { white-space: pre-wrap; overflow-wrap: anywhere }
+.mact { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 2px 0 0 -8px }
+.mact .pill { margin-left: 8px }
+.banner .chips { margin-top: 8px }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; font-weight: 600; color: var(--muted) }
+
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface) }
+.day { border-left: 1px solid var(--line); min-height: 220px; display: flex; flex-direction: column; min-width: 0 }
+.day:first-child { border-left: 0 }
+.day > header { padding: 8px; border-bottom: 1px solid var(--line); font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between }
+.day.today > header { background: var(--accent); color: var(--accent-ink) }
+.day .items { padding: 6px; display: flex; flex-direction: column; gap: 5px }
+.ev { text-align: left; border: 0; border-radius: 6px; padding: 5px 7px; background: var(--accent-soft); color: var(--ink); font-size: .82rem; line-height: 1.3; overflow-wrap: anywhere; width: 100% }
+.ev .mono { display: block; color: var(--accent); font-size: .7rem }
+.ev.task { background: transparent; border: 1px dashed var(--line); color: var(--muted) }
+
+.chat { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--line); min-width: 0 }
+.chat > header { display: flex; justify-content: space-between; align-items: center; padding: 16px 16px 12px; border-bottom: 1px solid var(--line) }
+.chat > header p { margin: 0; font-size: .8rem }
+.msgs { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px }
+.msg { max-width: 92%; padding: 9px 12px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .93rem }
+.msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 3px }
+.msg.assistant { align-self: flex-start; background: var(--bg); border-bottom-left-radius: 3px }
+.msg.note { align-self: center; background: none; color: var(--muted); font-size: .82rem; text-align: center; padding: 0 }
+.starter { display: flex; flex-direction: column; gap: 8px; margin: auto 0 }
+.starter button { text-align: left; white-space: normal }
+.composer { padding: 12px 16px 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px }
+.composer .line { display: flex; gap: 8px; align-items: flex-end }
+.composer textarea { flex: 1; max-height: 160px }
+
+dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 0; width: min(440px, calc(100vw - 32px)) }
+dialog::backdrop { background: rgb(0 0 0 / .45) }
+dialog form { padding: 20px; display: flex; flex-direction: column; gap: 14px }
+dialog label { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; font-weight: 600; color: var(--muted) }
+dialog .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap }
+dialog .actions .danger { margin-right: auto }
+.toast { position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: .88rem; z-index: 30 }
+
+@media (max-width: 1150px) {
+  .app { grid-template-columns: 200px minmax(0, 1fr) }
+  .nav a.nav-claude { display: flex }
+  .chat { display: none; grid-column: 2; position: static; height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); border-left: 0 }
+  .app.v-claude .chat { display: flex }
+  .app.v-claude .main { display: none }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr) }
+  .rail { position: fixed; inset: auto 0 0 0; top: auto; height: auto; z-index: 20; flex-direction: row; background: var(--surface); border-right: 0; border-top: 1px solid var(--line);
+    padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)) }
+  .brand, .rail-foot, .nav .count { display: none }
+  .nav { flex-direction: row; flex: 1; justify-content: space-between; gap: 0 }
+  .nav a { flex: 1; justify-content: center; padding: 8px 2px; font-size: .72rem }
+  .chat { grid-column: 1; height: calc(100dvh - 58px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) }
+  .main { padding-block: 18px 90px }
+  .main > section { padding-inline: 0 }
+  .cols { grid-template-columns: minmax(0, 1fr) }
+  h1 { font-size: 1.6rem }
+  .week { grid-template-columns: minmax(0, 1fr) }
+  .day { border-left: 0; border-top: 1px solid var(--line); min-height: 0 }
+  .day:first-child { border-top: 0 }
+}
+@media (prefers-reduced-motion: no-preference) { .bar > i { transition: width .3s } }
+</style>
+
+<div class="app" id="app">
+  <aside class="rail">
+    <div class="brand">Mon Bureau<span>.</span></div>
+    <nav class="nav" id="nav" aria-label="Vues">
+      <a href="#jour" data-v="jour">Jour <span class="count" id="n-jour"></span></a>
+      <a href="#taches" data-v="taches">Tâches <span class="count" id="n-taches"></span></a>
+      <a href="#projets" data-v="projets">Projets <span class="count" id="n-projets"></span></a>
+      <a href="#agenda" data-v="agenda">Agenda</a>
+      <a href="#objectifs" data-v="objectifs">Objectifs <span class="count" id="n-objectifs"></span></a>
+      <a href="#messages" data-v="messages">Messages <span class="count" id="n-messages"></span></a>
+    </nav>
+    <div class="rail-foot">Données enregistrées sur ce téléphone</div>
+  </aside>
+
+  <main class="main">
+    <div class="banner" id="banner" hidden></div>
+
+    <section id="v-jour">
+      <div class="head">
+        <div><div class="eyebrow" id="j-week"></div><h1 id="j-date"></h1><p class="muted" id="j-sum"></p></div>
+      </div>
+      <div class="cols">
+        <div>
+          <div class="block">
+            <header><h2>À faire aujourd’hui</h2><span class="muted mono" id="j-tcount"></span></header>
+            <form class="quick" id="f-jtask"><input type="text" id="jt-title" placeholder="Ajouter une tâche pour aujourd’hui" aria-label="Nouvelle tâche pour aujourd’hui" required><button class="btn primary">Ajouter</button></form>
+            <ul class="list" id="j-tasks"></ul>
+          </div>
+          <div class="block">
+            <header><h2>Routines</h2><span class="muted" style="font-size:.8rem">7 derniers jours</span></header>
+            <ul class="list" id="j-habits"></ul>
+            <form class="quick" id="f-habit"><input type="text" id="hb-name" placeholder="Nouvelle routine (ex. 30 min de lecture)" aria-label="Nouvelle routine" required><button class="btn">Ajouter</button></form>
+          </div>
+        </div>
+        <div>
+          <div class="block">
+            <header><h2>Programme</h2><a href="#agenda" class="muted" style="font-size:.8rem">Voir la semaine</a></header>
+            <ul class="list" id="j-events"></ul>
+            <form class="quick" id="f-jevent"><input type="time" id="je-start" aria-label="Heure de début"><input type="text" id="je-title" placeholder="Rendez-vous, créneau…" aria-label="Nouveau créneau aujourd’hui" required><button class="btn">Ajouter</button></form>
+          </div>
+          <div class="block">
+            <header><h2>Note du jour</h2><span class="muted" style="font-size:.8rem" id="j-saved"></span></header>
+            <textarea id="j-note" rows="5" placeholder="Ce qui compte aujourd’hui, idées, bilan du soir…" aria-label="Note du jour"></textarea>
+          </div>
+          <div class="block">
+            <header><h2>Objectifs</h2><a href="#objectifs" class="muted" style="font-size:.8rem">Tout voir</a></header>
+            <div id="j-goals"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="v-taches" hidden>
+      <div class="head"><div><h1>Tâches</h1><p class="muted" id="t-sum"></p></div></div>
+      <form class="quick" id="f-task">
+        <input type="text" id="qt-title" placeholder="Nouvelle tâche" aria-label="Nouvelle tâche" required>
+        <input type="date" id="qt-due" aria-label="Échéance">
+        <select id="qt-project" aria-label="Projet"></select>
+        <button class="btn primary">Ajouter</button>
+      </form>
+      <div class="chips" id="t-filters" role="group" aria-label="Filtrer les tâches"></div>
+      <ul class="list" id="t-list"></ul>
+    </section>
+
+    <section id="v-projets" hidden>
+      <div class="head"><div><h1>Projets</h1><p class="muted" id="p-sum"></p></div><button class="btn primary" id="b-newproject">Nouveau projet</button></div>
+      <div class="cards" id="p-list"></div>
+    </section>
+
+    <section id="v-agenda" hidden>
+      <div class="head">
+        <div><div class="eyebrow" id="a-week"></div><h1 id="a-title"></h1></div>
+        <div class="chips"><button class="btn" id="a-prev" aria-label="Semaine précédente">←</button><button class="btn" id="a-today">Cette semaine</button><button class="btn" id="a-next" aria-label="Semaine suivante">→</button><button class="btn primary" id="b-newevent">Nouveau créneau</button></div>
+      </div>
+      <div class="week" id="a-grid"></div>
+      <p class="muted" style="font-size:.82rem;margin:0">Les créneaux sont pleins, les tâches à échéance sont en pointillés.</p>
+    </section>
+
+    <section id="v-objectifs" hidden>
+      <div class="head"><div><h1>Objectifs</h1><p class="muted" id="g-sum"></p></div><button class="btn primary" id="b-newgoal">Nouvel objectif</button></div>
+      <div id="g-list"></div>
+    </section>
+    <section id="v-messages" hidden>
+      <div class="head"><div><h1>Messages</h1><p class="muted" id="m-sum"></p></div>
+        <div class="chips"><button class="btn primary" id="m-claude">Envoyer à Claude</button><button class="btn" id="m-import">Importer la réponse</button></div></div>
+      <div class="banner" id="m-access" hidden style="margin:0;max-width:none">
+        <span id="m-access-text"></span>
+        <div class="chips"><button class="btn" id="m-grant">Autoriser l’accès</button><button class="btn ghost" id="m-restricted">Option grisée ? Ouvrir la fiche de l’application</button></div>
+      </div>
+      <input type="text" id="m-q" placeholder="Rechercher un contact, un groupe, un mot" aria-label="Rechercher dans les messages">
+      <div class="chips" id="m-apps" role="group" aria-label="Filtrer par application"></div>
+      <ul class="list" id="m-list"></ul>
+      <div class="block">
+        <header><h2>Réglages</h2></header>
+        <label class="field">Notifications à capter
+          <select id="s-all"><option value="0">WhatsApp seulement</option><option value="1">Toutes les applications</option></select></label>
+        <label class="field">Ne garder que ces contacts ou groupes (séparés par des virgules, vide = tous)
+          <input type="text" id="s-only" placeholder="ex. Awa, Famille, Équipe chantier"></label>
+        <div class="chips"><button class="btn" id="s-export">Sauvegarder mes données</button><button class="btn" id="s-import">Restaurer une sauvegarde</button><button class="btn danger" id="s-clear">Vider la boîte de réception</button></div>
+      </div>
+    </section>
+  </main>
+
+</div>
+
+<dialog id="ed"><form id="ed-form" method="dialog"></form></dialog>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const h = (tag, attrs, ...kids) => {
+  const e = document.createElement(tag);
+  for (const k in attrs || {}) {
+    const v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k in e && k !== "list") e[k] = v; else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c);
+  return e;
+};
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const monday = d => addDays(d, -((d.getDay() + 6) % 7));
+const isoWeek = d => { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const n = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - n); const y = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - y) / 864e5 + 1) / 7); };
+const fmt = (d, o) => new Intl.DateTimeFormat("fr-FR", o).format(d);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const TODAY = () => ymd(new Date());
+const shortDate = s => fmt(parse(s), { day: "numeric", month: "short" });
+
+const S = { tasks: new Map(), projects: new Map(), goals: new Map(), events: new Map(), habits: new Map() };
+let loaded = false;
+let filter = "ouvertes", weekStart = monday(new Date());
+
+/* ---------- storage ---------- */
+const N = window.Native || null;
+let journal = {};
+function toast(msg) { const t = h("div", { class: "toast", role: "status" }, msg); document.body.append(t); setTimeout(() => t.remove(), 3500); }
+const dump = () => JSON.stringify({ v: 1, ...Object.fromEntries(Object.keys(S).map(k => [k, Object.fromEntries(S[k])])), journal });
+function load(json) {
+  const o = JSON.parse(json || "{}");
+  for (const k of Object.keys(S)) S[k] = new Map(Object.entries(o[k] || {}));
+  journal = o.journal || {};
+}
+let saveT = 0, dirty = false;
+function flush() { if (!dirty) return; clearTimeout(saveT); dirty = false; try { N ? N.saveState(dump()) : localStorage.setItem("bureau", dump()); } catch (e) { toast("Enregistrement impossible."); } }
+function persist() { dirty = true; clearTimeout(saveT); saveT = setTimeout(flush, 250); }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+async function create(type, data) { const id = uid(); S[type].set(id, { ...data, createdAt: Date.now() }); persist(); render(); return id; }
+async function patch(type, id, data) { const cur = S[type].get(id); if (!cur) return; const next = { ...cur, ...data }; if (data.log) next.log = { ...(cur.log || {}), ...data.log }; S[type].set(id, next); persist(); render(); }
+async function remove(type, id) { S[type].delete(id); persist(); render(); }
+const openUrl = u => { N ? N.openUrl(u) : window.open(u, "_blank"); };
+
+/* ---------- derived ---------- */
+const all = t => [...S[t].entries()].map(([id, d]) => ({ id, ...d }));
+const openTasks = () => all("tasks").filter(t => !t.done);
+const sortTasks = a => a.sort((x, y) => (x.due || "9999").localeCompare(y.due || "9999") || (y.priority === "haute") - (x.priority === "haute") || (x.createdAt || 0) - (y.createdAt || 0));
+const projName = id => (id && S.projects.get(id) || {}).name || "";
+const eventsOn = d => all("events").filter(e => e.date === d).sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+
+/* ---------- rows ---------- */
+function taskRow(t, opts = {}) {
+  const td = TODAY();
+  const duePill = t.due && !t.done ? h("span", { class: "pill " + (t.due < td ? "late" : t.due === td ? "today" : "") }, t.due < td ? "En retard · " + shortDate(t.due) : t.due === td ? "Aujourd’hui" : shortDate(t.due)) : null;
+  return h("li", { class: "row" + (t.done ? " done" : "") },
+    h("input", { type: "checkbox", checked: !!t.done, "aria-label": "Terminer : " + t.title, onchange: () => patch("tasks", t.id, { done: !t.done, doneAt: t.done ? null : Date.now() }) }),
+    h("div", { class: "body" },
+      h("button", { class: "title", type: "button", onclick: () => openEditor("tasks", t.id) }, t.title),
+      h("div", { class: "meta" }, opts.hideDue ? null : duePill, t.priority === "haute" && !t.done ? h("span", { class: "pill high" }, "Prioritaire") : null, projName(t.projectId) ? h("span", {}, projName(t.projectId)) : null)));
+}
+const empty = txt => h("li", { class: "empty" }, txt);
+
+/* ---------- views ---------- */
+function renderJour() {
+  const now = new Date(), td = ymd(now);
+  $("j-week").textContent = "Semaine " + isoWeek(now);
+  $("j-date").textContent = cap(fmt(now, { weekday: "long", day: "numeric", month: "long" }));
+  const tasks = sortTasks(openTasks().filter(t => t.due && t.due <= td));
+  const late = tasks.filter(t => t.due < td).length, evs = eventsOn(td);
+  $("j-sum").textContent = !loaded ? "" : [tasks.length + (tasks.length > 1 ? " tâches" : " tâche"), late ? late + " en retard" : null, evs.length + (evs.length > 1 ? " créneaux" : " créneau")].filter(Boolean).join(" · ");
+  $("j-tcount").textContent = tasks.length || "";
+  $("j-tasks").replaceChildren(...(tasks.length ? tasks.map(t => taskRow(t)) : [empty(loaded ? "Rien de prévu. Ajoutez la première tâche du jour ci-dessus." : "Chargement…")]));
+  $("j-events").replaceChildren(...(evs.length ? evs.map(e => h("li", { class: "row" }, h("span", { class: "time" }, e.start ? e.start + (e.end ? "–" + e.end : "") : "Journée"), h("div", { class: "body" }, h("button", { class: "title", type: "button", onclick: () => openEditor("events", e.id) }, e.title)))) : [empty("Aucun créneau aujourd’hui.")]));
+  const days = [...Array(7)].map((_, i) => ymd(addDays(now, i - 6)));
+  const habits = all("habits").sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  $("j-habits").replaceChildren(...(habits.length ? habits.map(hb => { const log = hb.log || {}; return h("li", { class: "row" },
+    h("input", { type: "checkbox", checked: !!log[td], "aria-label": "Fait aujourd’hui : " + hb.name, onchange: () => patch("habits", hb.id, { log: { [td]: !log[td] } }) }),
+    h("div", { class: "body" }, h("button", { class: "title", type: "button", onclick: () => openEditor("habits", hb.id) }, hb.name)),
+    h("div", { class: "dots", title: days.filter(d => log[d]).length + " jours sur 7" }, days.map(d => h("i", { class: log[d] ? "on" : "" })))); }) : [empty("Les routines sont ce que vous voulez refaire chaque jour. Cochez-les ici.")]));
+  const goals = all("goals").sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999")).slice(0, 4);
+  $("j-goals").replaceChildren(...(goals.length ? goals.map(g => h("div", { class: "goal" }, h("div", { style: "min-width:0" }, h("div", { style: "font-weight:500;overflow-wrap:anywhere" }, g.title), h("div", { class: "bar", style: "margin-top:6px" }, h("i", { style: "width:" + (g.progress || 0) + "%" }))), h("div", { class: "pct" }, (g.progress || 0) + " %"))) : [h("div", { class: "empty" }, "Aucun objectif pour l’instant.")]));
+}
+
+const FILTERS = [["ouvertes", "À faire"], ["jour", "Aujourd’hui"], ["semaine", "7 jours"], ["sansdate", "Sans date"], ["faites", "Terminées"]];
+function renderTaches() {
+  const td = TODAY(), in7 = ymd(addDays(new Date(), 7)), tasks = all("tasks");
+  const f = { ouvertes: t => !t.done, jour: t => !t.done && t.due && t.due <= td, semaine: t => !t.done && t.due && t.due <= in7, sansdate: t => !t.done && !t.due, faites: t => t.done }[filter];
+  let list = tasks.filter(f);
+  list = filter === "faites" ? list.sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).slice(0, 100) : sortTasks(list);
+  const open = tasks.filter(t => !t.done).length;
+  $("t-sum").textContent = loaded ? open + " à faire · " + (tasks.length - open) + " terminées" : "";
+  $("t-filters").replaceChildren(...FILTERS.map(([k, l]) => h("button", { class: "chip", type: "button", "aria-pressed": String(filter === k), onclick: () => { filter = k; renderTaches(); } }, l + " " + tasks.filter({ ouvertes: t => !t.done, jour: t => !t.done && t.due && t.due <= td, semaine: t => !t.done && t.due && t.due <= in7, sansdate: t => !t.done && !t.due, faites: t => t.done }[k]).length)));
+  $("t-list").replaceChildren(...(list.length ? list.map(t => taskRow(t)) : [empty(loaded ? "Aucune tâche dans cette vue." : "Chargement…")]));
+}
+
+const STATUS = [["actif", "Actif"], ["pause", "En pause"], ["termine", "Terminé"]];
+function renderProjets() {
+  const ps = all("projects").sort((a, b) => STATUS.findIndex(s => s[0] === (a.status || "actif")) - STATUS.findIndex(s => s[0] === (b.status || "actif")) || (a.deadline || "9999").localeCompare(b.deadline || "9999"));
+  const tasks = all("tasks");
+  $("p-sum").textContent = loaded ? ps.filter(p => (p.status || "actif") === "actif").length + " actifs sur " + ps.length : "";
+  $("p-list").replaceChildren(...(ps.length ? ps.map(p => {
+    const mine = tasks.filter(t => t.projectId === p.id), done = mine.filter(t => t.done).length, next = sortTasks(mine.filter(t => !t.done)).slice(0, 3);
+    const st = p.status || "actif";
+    return h("article", { class: "card" },
+      h("header", {}, h("div", { style: "min-width:0" }, h("h3", {}, p.name), p.repo ? h("div", { class: "mono muted" }, p.repo) : null), h("span", { class: "pill" + (st === "actif" ? " on" : "") }, STATUS.find(s => s[0] === st)[1])),
+      p.note ? h("div", { class: "muted", style: "font-size:.88rem;overflow-wrap:anywhere" }, p.note) : null,
+      h("div", {}, h("div", { class: "meta", style: "justify-content:space-between;margin-bottom:5px" }, h("span", { class: "mono" }, done + "/" + mine.length + " tâches"), p.deadline ? h("span", { class: p.deadline < TODAY() && st !== "termine" ? "pill late" : "" }, "Échéance " + shortDate(p.deadline)) : null), h("div", { class: "bar" }, h("i", { style: "width:" + (mine.length ? Math.round(done / mine.length * 100) : 0) + "%" }))),
+      next.length ? h("ul", { class: "next" }, next.map(t => h("li", {}, t.title))) : h("div", { class: "muted", style: "font-size:.85rem" }, mine.length ? "Toutes les tâches sont faites." : "Pas encore de tâche."),
+      h("footer", {}, h("button", { class: "btn", type: "button", onclick: () => openEditor("tasks", null, { projectId: p.id }) }, "Ajouter une tâche"), h("button", { class: "btn ghost", type: "button", onclick: () => openEditor("projects", p.id) }, "Modifier")),
+      h("div", { class: "links" }, h("button", { class: "btn", type: "button", onclick: () => openUrl("https://claude.ai/code") }, "Travailler avec Claude Code"), p.repo ? h("button", { class: "btn ghost", type: "button", onclick: () => openUrl("https://github.com/" + p.repo.replace(/^https?:\/\/github\.com\//, "")) }, "GitHub") : null, p.site ? h("button", { class: "btn ghost", type: "button", onclick: () => openUrl(/^https?:\/\//.test(p.site) ? p.site : "https://" + p.site) }, "Site") : null));
+  }) : [h("div", { class: "empty" }, loaded ? "Aucun projet. Créez-en un pour y rattacher vos tâches et suivre son avancement." : "Chargement…")]));
+}
+
+function renderAgenda() {
+  const td = TODAY(), end = addDays(weekStart, 6);
+  $("a-week").textContent = "Semaine " + isoWeek(weekStart);
+  $("a-title").textContent = fmt(weekStart, { day: "numeric", month: weekStart.getMonth() === end.getMonth() ? undefined : "short" }) + " – " + fmt(end, { day: "numeric", month: "long" });
+  const tasks = openTasks();
+  $("a-grid").replaceChildren(...[...Array(7)].map((_, i) => {
+    const d = addDays(weekStart, i), key = ymd(d), evs = eventsOn(key), ts = tasks.filter(t => t.due === key);
+    return h("div", { class: "day" + (key === td ? " today" : "") },
+      h("header", {}, h("span", {}, fmt(d, { weekday: "short" })), h("span", { class: "mono" }, d.getDate())),
+      h("div", { class: "items" },
+        evs.map(e => h("button", { class: "ev", type: "button", onclick: () => openEditor("events", e.id) }, h("span", { class: "mono" }, e.start ? e.start + (e.end ? "–" + e.end : "") : "Journée"), e.title)),
+        ts.map(t => h("button", { class: "ev task", type: "button", onclick: () => openEditor("tasks", t.id) }, t.title)),
+        h("button", { class: "btn ghost", type: "button", style: "font-size:.78rem;text-align:left", "aria-label": "Ajouter un créneau le " + fmt(d, { weekday: "long", day: "numeric" }), onclick: () => openEditor("events", null, { date: key }) }, "+ Ajouter")));
+  }));
+}
+
+const HORIZON = [["mois", "Ce mois"], ["trimestre", "Ce trimestre"], ["annee", "Cette année"], ["long", "Long terme"]];
+function renderObjectifs() {
+  const gs = all("goals").sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999"));
+  $("g-sum").textContent = loaded && gs.length ? "Avancement moyen " + Math.round(gs.reduce((s, g) => s + (g.progress || 0), 0) / gs.length) + " %" : "";
+  $("g-list").replaceChildren(...(gs.length ? gs.map(g => h("div", { class: "goal" },
+    h("div", { style: "min-width:0" }, h("button", { class: "title", type: "button", style: "background:none;border:0;padding:0;font-weight:600;text-align:left;overflow-wrap:anywhere", onclick: () => openEditor("goals", g.id) }, g.title),
+      h("div", { class: "meta" }, h("span", {}, (HORIZON.find(x => x[0] === g.horizon) || HORIZON[1])[1]), g.deadline ? h("span", {}, "Échéance " + shortDate(g.deadline)) : null),
+      h("input", { type: "range", id: "gr-" + g.id, min: 0, max: 100, step: 5, value: g.progress || 0, "aria-label": "Avancement : " + g.title, onchange: e => patch("goals", g.id, { progress: Number(e.target.value) }), oninput: e => { e.target.closest(".goal").querySelector(".pct").textContent = e.target.value + " %"; } })),
+    h("div", { class: "pct" }, (g.progress || 0) + " %"))) : [h("div", { class: "empty" }, loaded ? "Aucun objectif. Notez ce que vous voulez atteindre, puis faites glisser le curseur à mesure que vous avancez." : "Chargement…")]));
+}
+
+function fillProjects(sel, value) {
+  if (document.activeElement === sel) return;
+  const v = value !== undefined ? value : sel.value;
+  sel.replaceChildren(h("option", { value: "" }, "Sans projet"), ...all("projects").sort((a, b) => a.name.localeCompare(b.name)).map(p => h("option", { value: p.id }, p.name)));
+  sel.value = v || "";
+}
+let raf = 0;
+function render() { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => {
+  renderJour(); renderTaches(); renderProjets(); renderAgenda(); renderObjectifs(); fillProjects($("qt-project"));
+  const td = TODAY();
+  $("n-jour").textContent = openTasks().filter(t => t.due && t.due <= td).length || "";
+  $("n-taches").textContent = openTasks().length || "";
+  $("n-projets").textContent = all("projects").filter(p => (p.status || "actif") === "actif").length || "";
+  $("n-objectifs").textContent = S.goals.size || "";
+}); }
+
+/* ---------- routing ---------- */
+const VIEWS = ["jour", "taches", "projets", "agenda", "objectifs", "messages"];
+function route() {
+  let v = location.hash.slice(1); if (!VIEWS.includes(v)) v = "jour";
+  $("app").className = "app v-" + v;
+  for (const x of VIEWS) $("v-" + x).hidden = x !== v;
+  scrollTo(0, 0);
+  for (const a of $("nav").children) a.getAttribute("data-v") === v ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current");
+}
+addEventListener("hashchange", route);
+
+/* ---------- editor ---------- */
+const SCHEMA = {
+  tasks: { one: "tâche", f: [["title", "Intitulé", "text", 1], ["due", "Échéance", "date"], ["projectId", "Projet", "project"], ["priority", "Priorité", "select", 0, [["normale", "Normale"], ["haute", "Prioritaire"]]], ["note", "Détails", "area"]] },
+  events: { one: "créneau", f: [["title", "Intitulé", "text", 1], ["date", "Date", "date", 1], ["start", "Début", "time"], ["end", "Fin", "time"]] },
+  projects: { one: "projet", f: [["name", "Nom", "text", 1], ["status", "État", "select", 0, STATUS], ["deadline", "Échéance", "date"], ["repo", "Dépôt GitHub (compte/nom)", "text"], ["site", "Adresse du site (Vercel)", "text"], ["note", "Description", "area"]] },
+  goals: { one: "objectif", f: [["title", "Objectif", "text", 1], ["horizon", "Horizon", "select", 0, HORIZON], ["deadline", "Échéance", "date"], ["progress", "Avancement (%)", "number"]] },
+  habits: { one: "routine", f: [["name", "Routine", "text", 1]] },
+};
+function openEditor(type, id, preset = {}) {
+  const sc = SCHEMA[type], cur = id ? S[type].get(id) || {} : preset, form = $("ed-form");
+  const inputs = {};
+  const fields = sc.f.map(([k, label, kind, req, opts]) => {
+    let el; const val = cur[k] != null ? cur[k] : "";
+    if (kind === "select") { el = h("select", { id: "ed-" + k }, opts.map(([v, l]) => h("option", { value: v }, l))); el.value = val || opts[0][0]; }
+    else if (kind === "project") { el = h("select", { id: "ed-" + k }); fillProjects(el, val); }
+    else if (kind === "area") el = h("textarea", { id: "ed-" + k, rows: 3, value: val });
+    else el = h("input", { id: "ed-" + k, type: kind, value: val, required: !!req, ...(kind === "number" ? { min: 0, max: 100, step: 5 } : {}) });
+    inputs[k] = el; return h("label", {}, label, el);
+  });
+  let armed = false;
+  const del = id ? h("button", { class: "btn danger", type: "button", onclick: async e => { if (!armed) { armed = true; e.target.textContent = "Confirmer la suppression"; return; } $("ed").close(); await remove(type, id); } }, "Supprimer") : null;
+  form.replaceChildren(h("h2", {}, (id ? "Modifier : " : "Ajouter : ") + sc.one), ...fields,
+    h("div", { class: "actions" }, del, h("button", { class: "btn", type: "button", onclick: () => $("ed").close() }, "Annuler"), h("button", { class: "btn primary", type: "submit" }, "Enregistrer")));
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const data = {}; for (const [k, , kind] of sc.f) { const v = inputs[k].value; data[k] = kind === "number" ? Math.max(0, Math.min(100, Number(v) || 0)) : v.trim(); }
+    $("ed").close();
+    if (id) await patch(type, id, data); else await create(type, { ...(type === "tasks" ? { done: false } : {}), ...data });
+  };
+  $("ed").showModal();
+}
+
+/* ---------- quick forms ---------- */
+const onSubmit = (id, fn) => $(id).addEventListener("submit", async e => { e.preventDefault(); try { await fn(); } catch (_) {} });
+onSubmit("f-jtask", async () => { const v = $("jt-title").value.trim(); if (!v) return; $("jt-title").value = ""; await create("tasks", { title: v, due: TODAY(), done: false, priority: "normale", projectId: "" }); });
+onSubmit("f-task", async () => { const v = $("qt-title").value.trim(); if (!v) return; const d = { title: v, due: $("qt-due").value, projectId: $("qt-project").value, done: false, priority: "normale" }; $("qt-title").value = ""; await create("tasks", d); });
+onSubmit("f-habit", async () => { const v = $("hb-name").value.trim(); if (!v) return; $("hb-name").value = ""; await create("habits", { name: v, log: {} }); });
+onSubmit("f-jevent", async () => { const v = $("je-title").value.trim(); if (!v) return; const d = { title: v, date: TODAY(), start: $("je-start").value, end: "" }; $("je-title").value = ""; $("je-start").value = ""; await create("events", d); });
+$("b-newproject").onclick = () => openEditor("projects", null, { status: "actif" });
+$("b-newgoal").onclick = () => openEditor("goals", null, { horizon: "trimestre", progress: 0 });
+$("b-newevent").onclick = () => openEditor("events", null, { date: ymd(weekStart <= new Date() && new Date() <= addDays(weekStart, 7) ? new Date() : weekStart) });
+$("a-prev").onclick = () => { weekStart = addDays(weekStart, -7); renderAgenda(); };
+$("a-next").onclick = () => { weekStart = addDays(weekStart, 7); renderAgenda(); };
+$("a-today").onclick = () => { weekStart = monday(new Date()); renderAgenda(); };
+
+/* ---------- journal ---------- */
+$("j-note").addEventListener("input", () => { journal[TODAY()] = $("j-note").value; persist(); $("j-saved").textContent = "Enregistrée"; });
+
+/* ---------- messages ---------- */
+let msgs = [], sel = new Set(), mq = "", mapp = "tous", canReply = new Set();
+const isWA = m => m.pkg === "com.whatsapp" || m.pkg === "com.whatsapp.w4b";
+const stamp = t => { const d = new Date(t); return (ymd(d) === TODAY() ? "" : fmt(d, { day: "numeric", month: "short" }) + " ") + pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+const who = m => m.sender + (m.conv && m.conv !== m.sender ? " · " + m.conv : "");
+function loadMsgs() {
+  if (N) { try { msgs = JSON.parse(N.messages(500)); canReply = new Set(JSON.parse(N.replyable())); } catch (e) { msgs = []; } }
+  const ids = new Set(msgs.map(m => m.id)); for (const id of [...sel]) if (!ids.has(id)) sel.delete(id);
+  renderMsgs();
+}
+function shown() {
+  const q = mq.trim().toLowerCase();
+  return msgs.filter(m => (mapp === "tous" || (mapp === "wa") === isWA(m)) && (!q || (m.sender + " " + m.conv + " " + m.text + " " + m.app).toLowerCase().includes(q)));
+}
+function renderMsgs() {
+  const access = N ? N.hasAccess() : false;
+  $("m-access").hidden = access;
+  $("m-access-text").textContent = N ? "Pour capter vos messages, autorisez Mon Bureau à lire les notifications de ce téléphone." : "La boîte de réception fonctionne dans l’application Android.";
+  $("m-grant").hidden = $("m-restricted").hidden = !N;
+  const list = shown();
+  const today = msgs.filter(m => ymd(new Date(m.time)) === TODAY()).length;
+  $("m-sum").textContent = msgs.length ? msgs.length + " captés · " + today + " aujourd’hui" : "";
+  $("n-messages").textContent = today || "";
+  $("m-apps").replaceChildren(...[["tous", "Tout"], ["wa", "WhatsApp"], ["autres", "Autres"]].map(([k, l]) => h("button", { class: "chip", type: "button", "aria-pressed": String(mapp === k), onclick: () => { mapp = k; renderMsgs(); } }, l)));
+  $("m-claude").textContent = sel.size ? "Envoyer à Claude (" + sel.size + ")" : "Envoyer à Claude";
+  $("m-claude").disabled = !list.length;
+  $("m-list").replaceChildren(...(list.length ? list.slice(0, 200).map(m => h("li", { class: "row" },
+    h("input", { type: "checkbox", checked: sel.has(m.id), "aria-label": "Sélectionner le message de " + m.sender, onchange: e => { e.target.checked ? sel.add(m.id) : sel.delete(m.id); $("m-claude").textContent = sel.size ? "Envoyer à Claude (" + sel.size + ")" : "Envoyer à Claude"; } }),
+    h("div", { class: "body" },
+      h("div", { class: "mhead" }, h("strong", {}, who(m)), h("span", { class: "mono muted" }, stamp(m.time))),
+      h("div", { class: "mtext" }, m.text),
+      h("div", { class: "mact" },
+        isWA(m) ? null : h("span", { class: "pill" }, m.app),
+        h("button", { class: "btn ghost", type: "button", onclick: () => openEditor("tasks", null, { title: (m.sender + " : " + m.text).slice(0, 120), note: m.text + "\n— " + who(m) + ", " + stamp(m.time), due: TODAY(), priority: "normale" }) }, "Tâche"),
+        h("button", { class: "btn ghost", type: "button", onclick: () => openEditor("events", null, { title: (m.sender + " : " + m.text).slice(0, 80), date: TODAY() }) }, "Créneau"),
+        canReply.has(m.chat) ? h("button", { class: "btn ghost", type: "button", onclick: () => openReply(m) }, "Répondre") : null,
+        h("button", { class: "btn ghost danger", type: "button", onclick: () => { if (N) N.deleteMessage(String(m.id)); else msgs = msgs.filter(x => x !== m); loadMsgs(); } }, "Supprimer"))))) : [empty(msgs.length ? "Aucun message ne correspond." : access ? "Aucun message capté pour l’instant. Les prochains messages reçus apparaîtront ici." : "Rien à afficher tant que l’accès aux notifications n’est pas accordé.")]));
+}
+function textDialog(title, hint, okLabel, initial, onOk) {
+  const ta = h("textarea", { id: "ed-text", rows: 7, value: initial, placeholder: hint, required: true });
+  const form = $("ed-form");
+  form.replaceChildren(h("h2", {}, title), ta, h("div", { class: "actions" }, h("button", { class: "btn", type: "button", onclick: () => $("ed").close() }, "Annuler"), h("button", { class: "btn primary", type: "submit" }, okLabel)));
+  form.onsubmit = e => { e.preventDefault(); const v = ta.value.trim(); if (!v) return; $("ed").close(); onOk(v); };
+  $("ed").showModal(); ta.focus();
+}
+function openReply(m) {
+  textDialog("Répondre à " + (m.conv || m.sender), "Votre réponse", "Envoyer", "", v => toast(N && N.reply(m.chat, v) ? "Réponse envoyée." : "Envoi impossible : la notification n’est plus active. Répondez depuis WhatsApp."));
+}
+$("m-q").addEventListener("input", e => { mq = e.target.value; renderMsgs(); });
+$("m-grant").onclick = () => N && N.openAccess();
+$("m-restricted").onclick = () => N && N.openAppInfo();
+$("m-claude").onclick = () => {
+  const list = shown(), pick = (sel.size ? list.filter(m => sel.has(m.id)) : list.slice(0, 40)).slice().reverse();
+  if (!pick.length) return;
+  const text = "Voici des messages reçus sur mon téléphone. Nous sommes le " + fmt(new Date(), { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + " (" + TODAY() + ").\n" +
+    "Résume-les en quelques lignes, puis dis-moi ce qui demande une action de ma part.\n" +
+    "Termine par un bloc que j’importerai dans mon bureau, une ligne par élément, exactement sous cette forme :\n" +
+    "TACHE | intitulé | AAAA-MM-JJ\nRDV | intitulé | AAAA-MM-JJ | HH:MM\n(laisse la date ou l’heure vide si elle est inconnue)\n\nMessages :\n" +
+    pick.map(m => "[" + stamp(m.time) + "] " + m.app + " · " + who(m) + " : " + m.text).join("\n");
+  if (N) N.share(text); else navigator.clipboard && navigator.clipboard.writeText(text).then(() => toast("Texte copié."), () => {});
+};
+function importClaude(text) {
+  let nt = 0, ne = 0;
+  for (const raw of text.split("\n")) {
+    const p = raw.replace(/^[\s>*\-•]+/, "").split("|").map(s => s.trim());
+    const kind = (p[0] || "").toUpperCase().normalize("NFD").replace(/[^A-Z]/g, ""), title = (p[1] || "").slice(0, 200);
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(p[2] || "") ? p[2] : "";
+    if (!title || title.toLowerCase() === "intitulé") continue;
+    if (kind === "TACHE") { S.tasks.set(uid(), { title, due: date, projectId: "", priority: "normale", done: false, createdAt: Date.now() }); nt++; }
+    else if (kind === "RDV" && date) { S.events.set(uid(), { title, date, start: /^\d{2}:\d{2}$/.test(p[3] || "") ? p[3] : "", end: "", createdAt: Date.now() }); ne++; }
+  }
+  if (nt + ne) { persist(); render(); }
+  toast(nt + ne ? nt + " tâche(s) et " + ne + " créneau(x) ajoutés." : "Aucune ligne TACHE ou RDV trouvée dans ce texte.");
+}
+$("m-import").onclick = () => textDialog("Importer la réponse de Claude", "Collez ici la réponse de Claude. Les lignes « TACHE | … » et « RDV | … » seront ajoutées à votre bureau.", "Importer", "", importClaude);
+
+/* ---------- réglages ---------- */
+$("s-all").addEventListener("change", e => N && N.setPref("captureAll", e.target.value));
+$("s-only").addEventListener("change", e => N && N.setPref("only", e.target.value));
+$("s-export").onclick = () => { flush(); const j = dump(); if (N) N.share(j); else navigator.clipboard && navigator.clipboard.writeText(j).then(() => toast("Sauvegarde copiée."), () => {}); };
+$("s-import").onclick = () => textDialog("Restaurer une sauvegarde", "Collez ici le texte d’une sauvegarde. Il remplacera toutes les données actuelles du bureau.", "Remplacer mes données", "", v => { try { const o = JSON.parse(v); if (!o || typeof o !== "object" || !o.tasks) throw 0; load(v); persist(); $("j-note").value = journal[TODAY()] || ""; render(); toast("Sauvegarde restaurée."); } catch (e) { toast("Ce texte n’est pas une sauvegarde valide."); } });
+let clearArmed = false;
+$("s-clear").onclick = e => { if (!clearArmed) { clearArmed = true; e.target.textContent = "Confirmer : tout effacer"; setTimeout(() => { clearArmed = false; e.target.textContent = "Vider la boîte de réception"; }, 3000); return; } clearArmed = false; e.target.textContent = "Vider la boîte de réception"; if (N) N.clearMessages(); msgs = []; loadMsgs(); };
+
+/* ---------- boot ---------- */
+let saved = ""; try { saved = N ? N.loadState() : localStorage.getItem("bureau") || ""; } catch (e) {}
+try { load(saved); } catch (e) { toast("Données illisibles : le bureau repart à vide."); }
+if (!saved) {
+  // First launch: the owner's existing repositories become projects.
+  for (const r of ["2mt-shopping", "unlockpro", "Enm", "alit", "dcshare"]) S.projects.set(uid(), { name: r, status: "actif", deadline: "", note: "", repo: "cheickdev/" + r, site: "", createdAt: Date.now() });
+  persist();
+}
+loaded = true;
+$("j-note").value = journal[TODAY()] || "";
+if (N) { $("s-all").value = N.getPref("captureAll") === "1" ? "1" : "0"; $("s-only").value = N.getPref("only"); }
+route(); render(); loadMsgs();
+const refresh = () => { if (!document.hidden) { loadMsgs(); render(); } };
+window.onNativeResume = refresh;
+document.addEventListener("visibilitychange", () => document.hidden ? flush() : refresh());
+addEventListener("pagehide", flush);
+setInterval(() => { if (!document.hidden && !$("v-messages").hidden && !$("ed").open) loadMsgs(); }, 5000);
+})();
+</script>
