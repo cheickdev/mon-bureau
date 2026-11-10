@@ -3,6 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mon Bureau</title>
+<script>try{var t=window.Native?Native.getPref("theme"):localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: a desk. Left rail = drawers (views), centre = the work surface, right = Claude sitting across the table. */
@@ -285,6 +286,8 @@ dialog .actions .danger { margin-right: auto }
       <ul class="list" id="m-list"></ul>
       <div class="block">
         <header><h2>Réglages</h2></header>
+        <label class="field">Apparence
+          <select id="s-theme"><option value="">Automatique (comme le téléphone)</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
         <label class="field">Notifications à capter
           <select id="s-all"><option value="0">WhatsApp seulement</option><option value="1">Toutes les applications</option></select></label>
         <label class="field">Ne garder que ces contacts ou groupes (séparés par des virgules, vide = tous)
@@ -595,6 +598,13 @@ function importClaude(text) {
 $("m-import").onclick = () => textDialog("Importer la réponse de Claude", "Collez ici la réponse de Claude. Les lignes « TACHE | … » et « RDV | … » seront ajoutées à votre bureau.", "Importer", "", importClaude);
 
 /* ---------- réglages ---------- */
+function applyTheme(t) {
+  if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+  const dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  if (N && N.setBars) N.setBars(dark);
+}
+$("s-theme").addEventListener("change", e => { const t = e.target.value; try { N ? N.setPref("theme", t) : localStorage.setItem("theme", t); } catch (_) {} applyTheme(t); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => applyTheme($("s-theme").value));
 $("s-all").addEventListener("change", e => N && N.setPref("captureAll", e.target.value));
 $("s-only").addEventListener("change", e => N && N.setPref("only", e.target.value));
 $("s-export").onclick = () => { flush(); const j = dump(); if (N) N.share(j); else navigator.clipboard && navigator.clipboard.writeText(j).then(() => toast("Sauvegarde copiée."), () => {}); };
@@ -613,6 +623,8 @@ if (!saved) {
 loaded = true;
 $("j-note").value = journal[TODAY()] || "";
 if (N) { $("s-all").value = N.getPref("captureAll") === "1" ? "1" : "0"; $("s-only").value = N.getPref("only"); }
+let theme = ""; try { theme = (N ? N.getPref("theme") : localStorage.getItem("theme")) || ""; } catch (e) {}
+$("s-theme").value = theme; applyTheme(theme);
 route(); render(); loadMsgs();
 const refresh = () => { if (!document.hidden) { loadMsgs(); render(); } };
 window.onNativeResume = refresh;

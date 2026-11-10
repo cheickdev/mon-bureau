@@ -4,9 +4,11 @@ import android.app.Activity
 import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.webkit.JavascriptInterface
 import org.json.JSONArray
 import java.io.File
@@ -92,6 +94,20 @@ class Bridge(private val act: Activity) {
     fun share(text: String) {
         val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
         start(Intent.createChooser(send, null))
+    }
+
+    /** Colours the system bars to match the theme chosen in the page. */
+    @JavascriptInterface
+    fun setBars(dark: Boolean) {
+        act.runOnUiThread {
+            val color = if (dark) Color.parseColor("#101513") else Color.parseColor("#ECF0ED")
+            act.window.statusBarColor = color
+            act.window.navigationBarColor = color
+            val light = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            val view = act.window.decorView
+            @Suppress("DEPRECATION")
+            view.systemUiVisibility = if (dark) view.systemUiVisibility and light.inv() else view.systemUiVisibility or light
+        }
     }
 
     private fun start(intent: Intent) {
